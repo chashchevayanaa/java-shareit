@@ -2,10 +2,11 @@ package ru.practicum.shareit.user;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
+import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -18,74 +19,51 @@ public class UserService {
         log.info("Создание пользователя с email: {}", userDto.getEmail());
         validateUser(userDto);
         if (userRepository.existsByEmail(userDto.getEmail())) {
-            log.error("Попытка создания пользователя с уже существующей почтой: {}", userDto.getEmail());
-            throw new RuntimeException("Пользователь с почтой " + userDto.getEmail() + " уже существует");
+            log.error("Email уже используется: {}", userDto.getEmail());
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Пользователь с такой почтой уже существует");
         }
         User user = userMapper.toUser(userDto);
-        user.setId(null);
-        User saved = userRepository.save(user);
-        log.info("Пользователь создан с id={}", saved.getId());
-        return userMapper.toDto(saved);
+        user = userRepository.save(user);
+        log.info("Пользователь создан с id={}", user.getId());
+        return userMapper.toDto(user);
     }
 
     public UserDto update(Long id, UserDto userDto) {
         log.info("Обновление пользователя id={}", id);
         User existing = userRepository.findById(id)
-                .orElseThrow(() -> {
-                    log.error("Пользователь с id={} не найден", id);
-                    return new RuntimeException("Не найден пользователь с id: " + id);
-                });
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Пользователь не найден"));
         if (userDto.getEmail() != null && !userDto.getEmail().equals(existing.getEmail())) {
             if (userRepository.existsByEmail(userDto.getEmail())) {
-                log.error("Попытка обновления: email {} уже занят", userDto.getEmail());
-                throw new RuntimeException("Email already taken");
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Email уже занят");
             }
         }
         userMapper.updateUser(existing, userDto);
-        User updated = userRepository.update(existing);
-        log.info("Пользователь id={} обновлён", updated.getId());
-        return userMapper.toDto(updated);
+        existing = userRepository.save(existing);
+        return userMapper.toDto(existing);
     }
 
     public UserDto findById(Long id) {
-        log.debug("Поиск пользователя по id={}", id);
         User user = userRepository.findById(id)
-                .orElseThrow(() -> {
-                    log.error("Пользователь с id={} не найден", id);
-                    return new RuntimeException("Не найден пользователь с id: " + id);
-                });
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Пользователь не найден"));
         return userMapper.toDto(user);
     }
 
     public List<UserDto> findAll() {
-        log.debug("Запрос всех пользователей");
-        List<User> users = userRepository.findAll();
-        List<UserDto> dtos = new ArrayList<>();
-        for (User user : users) {
-            dtos.add(userMapper.toDto(user));
-        }
-        log.debug("Найдено {} пользователей", dtos.size());
-        return dtos;
+        return userRepository.findAll().stream()
+                .map(userMapper::toDto)
+                .collect(Collectors.toList());
     }
 
     public void delete(Long id) {
-        log.info("Удаление пользователя id={}", id);
         userRepository.deleteById(id);
-        log.debug("Пользователь id={} удалён", id);
     }
 
-    private void validateUser(UserDto userDto) {
-        if (userDto.getName() == null || userDto.getName().isBlank()) {
-            log.warn("Ошибка валидации: имя пользователя пустое");
-            throw new RuntimeException("Имя не может быть пустым");
+    private void validateUser(UserDto dto) {
+        if (dto.getName() == null || dto.getName().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Имя не может быть пустым");
         }
-        if (userDto.getEmail() == null || userDto.getEmail().isBlank()) {
-            log.warn("Ошибка валидации: email пользователя пустой");
-            throw new RuntimeException("Почта не может быть пустой");
-        }
-        if (!userDto.getEmail().contains("@")) {
-            log.warn("Ошибка валидации: email '{}' не содержит @", userDto.getEmail());
-            throw new RuntimeException("Почта должна содержать @");
+        if (dto.getEmail() == null || dto.getEmail().isBlank() || !dto.getEmail().contains("@")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Некорректный email");
         }
     }
 }
