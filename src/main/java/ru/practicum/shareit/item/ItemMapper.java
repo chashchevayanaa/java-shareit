@@ -34,4 +34,14 @@ public class ItemMapper {
         if (dto.getDescription() != null) existing.setDescription(dto.getDescription());
         if (dto.getAvailable() != null) existing.setAvailable(dto.getAvailable());
     }
+
+    public ItemDtoExtended toDtoExtended(Item item) {
+        if (item == null) return null;
+        ItemDtoExtended dto = new ItemDtoExtended();
+        dto.setId(item.getId());
+        dto.setName(item.getName());
+        dto.setDescription(item.getDescription());
+        dto.setAvailable(item.getAvailable());
+        return dto;
+    }
 }
