@@ -6,11 +6,14 @@ import org.springframework.stereotype.Component;
 public class CommentMapper {
     public CommentDto toDto(Comment comment) {
         if (comment == null) return null;
-        CommentDto dto = new CommentDto();
-        dto.setId(comment.getId());
-        dto.setText(comment.getText());
-        dto.setAuthorName(comment.getAuthor().getName());
-        dto.setCreated(comment.getCreated());
-        return dto;
+
+        return CommentDto.builder()
+                .id(comment.getId())
+                .text(comment.getText())
+                .authorName(comment.getAuthor() != null
+                        ? comment.getAuthor().getName()
+                        : null)
+                .created(comment.getCreated())
+                .build();
     }
 }

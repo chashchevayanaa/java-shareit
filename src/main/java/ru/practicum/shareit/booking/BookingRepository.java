@@ -35,4 +35,36 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByOwnerIdAndStatus(@Param("ownerId") Long ownerId,
                                          @Param("status") Booking.BookingStatus status,
                                          Sort sort);
+
+    @Query("select b from Booking b where b.booker.id = :bookerId " +
+            "and b.start < :now and b.end > :now")
+    List<Booking> findCurrentByBookerId(@Param("bookerId") Long bookerId,
+                                        @Param("now") LocalDateTime now,
+                                        Sort sort);
+
+    @Query("select b from Booking b where b.booker.id = :bookerId and b.end < :now")
+    List<Booking> findPastByBookerId(@Param("bookerId") Long bookerId,
+                                     @Param("now") LocalDateTime now,
+                                     Sort sort);
+
+    @Query("select b from Booking b where b.booker.id = :bookerId and b.start > :now")
+    List<Booking> findFutureByBookerId(@Param("bookerId") Long bookerId,
+                                       @Param("now") LocalDateTime now,
+                                       Sort sort);
+
+    @Query("select b from Booking b where b.item.owner.id = :ownerId " +
+            "and b.start < :now and b.end > :now")
+    List<Booking> findCurrentByOwnerId(@Param("ownerId") Long ownerId,
+                                       @Param("now") LocalDateTime now,
+                                       Sort sort);
+
+    @Query("select b from Booking b where b.item.owner.id = :ownerId and b.end < :now")
+    List<Booking> findPastByOwnerId(@Param("ownerId") Long ownerId,
+                                    @Param("now") LocalDateTime now,
+                                    Sort sort);
+
+    @Query("select b from Booking b where b.item.owner.id = :ownerId and b.start > :now")
+    List<Booking> findFutureByOwnerId(@Param("ownerId") Long ownerId,
+                                      @Param("now") LocalDateTime now,
+                                      Sort sort);
 }
