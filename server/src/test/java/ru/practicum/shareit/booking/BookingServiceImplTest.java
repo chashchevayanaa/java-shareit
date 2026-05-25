@@ -88,8 +88,7 @@ class BookingServiceImplTest {
         when(userRepository.findById(2L)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> bookingService.create(new BookingDto(10L, start, end), 2L))
                 .isInstanceOf(ResponseStatusException.class)
-                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
-                .isEqualTo(HttpStatus.NOT_FOUND);
+                .matches(ex -> ((ResponseStatusException) ex).getStatusCode() == HttpStatus.NOT_FOUND);
     }
 
     @Test
@@ -224,9 +223,6 @@ class BookingServiceImplTest {
     void getAllByOwner_allStates() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(owner));
         when(bookingRepository.findByItemOwnerId(eq(1L), any(Sort.class))).thenReturn(List.of(booking));
-        when(bookingRepository.findCurrentByOwnerId(eq(1L), any(), any())).thenReturn(List.of(booking));
-        when(bookingRepository.findPastByOwnerId(eq(1L), any(), any())).thenReturn(List.of(booking));
-        when(bookingRepository.findFutureByOwnerId(eq(1L), any(), any())).thenReturn(List.of(booking));
         when(bookingRepository.findByOwnerIdAndStatus(eq(1L), any(), any())).thenReturn(List.of(booking));
         when(bookingMapper.toResponseDto(any())).thenReturn(new BookingResponseDto());
 
