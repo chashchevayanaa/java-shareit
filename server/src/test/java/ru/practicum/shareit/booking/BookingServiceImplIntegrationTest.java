@@ -57,4 +57,24 @@ class BookingServiceImplIntegrationTest {
 
         assertThat(bookings).extracting(BookingResponseDto::getId).contains(created.getId());
     }
+
+    @Test
+    void approveBooking_changesStatus() {
+        LocalDateTime start = LocalDateTime.now().plusDays(1);
+        LocalDateTime end = start.plusDays(1);
+        BookingResponseDto created = bookingService.create(
+                new BookingDto(item.getId(), start, end), booker.getId());
+
+        BookingResponseDto approved = bookingService.approve(created.getId(), owner.getId(), true);
+
+        assertThat(approved.getStatus()).isEqualTo(Booking.BookingStatus.APPROVED);
+    }
+
+    @Test
+    void getAllByOwner_waitingState() {
+        LocalDateTime start = LocalDateTime.now().plusDays(1);
+        bookingService.create(new BookingDto(item.getId(), start, start.plusDays(1)), booker.getId());
+
+        assertThat(bookingService.getAllByOwner(owner.getId(), "WAITING")).hasSize(1);
+    }
 }
